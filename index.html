@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>组件之间相互访问: $children, $refs, $parent, $root访问组件</title>
+    <meta http-equiv="Content-Type" content="text/html;charset=UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+    <meta http-equiv="X-UA-Compatible" content="ie=edg,chrome=1" />
+    <link rel="shortcut icon" href="https://www.jianshu.com/favicon.ico" type="image/x-icon" />
+    <link rel="stylesheet" href="./css/reset.css" />
+    <link rel="stylesheet" href="./css/common.css" />
+    <style type="text/css">
+      /* 设置所有按钮的背景颜色 */
+      button {
+        background-color: lightgreen;
+      }
+
+      /* 容器设置内边距和背景 */
+      #container {
+        padding: 0.15rem;
+        background-color: #fff;
+      }
+
+      #container h2 {
+        margin-bottom: 0.1rem;
+      }
+
+      #app .vm-btn1,
+      #app .vm-btn2 {
+        background-color: lightcoral;
+      }
+
+      #app > button {
+        text-align: center;
+        border: 1px solid #000;
+        padding: 0.05rem;
+        margin-left: 0.1rem;
+      }
+      #app img {
+        width: 2.4rem;
+        height: 1rem;
+      }
+
+      #parent_component {
+        padding: 0.1rem;
+      }
+
+      #parent_component > button {
+        text-align: center;
+        border: 1px solid #000;
+        padding: 0.05rem;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="container">
+      <h2>组件之间相互访问</h2>
+      <div id="app">
+        <div v-for="(src_value,msg_key) in msg_src_pairs">
+          <parent v-bind:src_parent="src_value" v-bind:msg_parent="msg_key" ref="parent"></parent>
+        </div>
+        <button @click="vmChildComponent()" class="vm-btn1">通过$children打印vm所有子组件</button>
+        <button @click="vmViewChildByRef()" class="vm-btn2">通过$refs访问vm子组件</button>
+      </div>
+    </div>
+
+    <script type="text/javascript" src="https://cdn.bootcss.com/vue/2.6.10/vue.js"></script>
+    <script type="text/javascript">
+      // 1.1注册全局子组件 my-child1
+      Vue.component(
+        'my-child1',
+        Vue.extend({
+          template: `
+            <img v-bind:src="src_child1">
+        `,
+          props: ['src_child1']
+        })
+      );
+
+      // 1.2注册全局子组件 my-child2
+      Vue.component(
+        'my-child2',
+        Vue.extend({
+          template: `
+            <p>{{msg_child2}}</p>
+        `,
+          props: ['msg_child2']
+        })
+      );
+
+      // 1.3注册全局子组件 my-child3
+      Vue.component(
+        'my-child3',
+        Vue.extend({
+          template: `
+            <button @click="parentComponent()">通过$parent访问父组件</button>
+        `,
+          methods: {
+            parentComponent() {
+              console.log('通过$parent访问父组件 :', this.$parent.$el);
+            }
+          }
+        })
+      );
+
+      // 1.4注册全局子组件 my-child4
+      Vue.component(
+        'my-child4',
+        Vue.extend({
+          template: `
+            <button @click="rootComponent()">通过$root访问根组件</button>
+        `,
+          methods: {
+            rootComponent() {
+              console.log('通过$root访问根组件 :', this.$root.$el);
+            }
+          }
+        })
+      );
+
+      // 2.1注册全局父组件 parent
+      Vue.component(
+        'parent',
+        Vue.extend({
+          template: `
+          <div id="parent_component">
+              <my-child1 v-bind:src_child1="src_parent" ref="my_child1"></my-child1>
+              <my-child2 v-bind:msg_child2="msg_parent" ref="my_child2"></my-child2>
+              <my-child3 ref="my_child3"></my-child3>
+              <my-child4 ref="my_child4"></my-child4>
+              <button @click="parentChildComponent()">通过$children打印parent所有子组件</button>
+              <button @click="parentViewChildByRef()">通过$refs访问parent子组件</button>
+          </div>
+        `,
+          components: {
+            'my-child1': Vue.extend({
+              template: `
+                <img v-bind:src="src_child1">
+        `,
+              // 子组件 my-child1 声明 props
+              props: ['src_child1']
+            }),
+            'my-child2': Vue.extend({
+              template: `
+                <p>{{msg_child2}}</p>
+        `,
+              //子组件 my-child2 声明 props
+              props: ['msg_child2']
+            }),
+            'my-child3': Vue.extend({
+              template: `
+                <button @click="parentComponent()">通过$parent访问父组件</button>
+        `,
+              methods: {
+                parentComponent() {
+                  console.log('通过$parent访问父组件 :', this.$parent.$el);
+                }
+              }
+            }),
+            'my-child4': Vue.extend({
+              template: `
+                <button @click="rootComponent()">通过$root访问根组件</button>
+        `,
+              methods: {
+                rootComponent() {
+                  console.log('通过$root访问根组件 :', this.$root.$el);
+                }
+              }
+            })
+          },
+          //父组件 parent 声明 props
+          props: ['src_parent', 'msg_parent'],
+          methods: {
+            parentChildComponent() {
+              for (let index = 0; index < this.$children.length; index++) {
+                const element = this.$children[index];
+                console.log('通过$children打印parent所有子组件 :', element.$el);
+              }
+            },
+            parentViewChildByRef() {
+              console.log('通过$refs访问parent子组件my_child1 :', this.$refs.my_child1.$el);
+              console.log('通过$refs访问parent子组件my_child2 :', this.$refs.my_child2.$el);
+              console.log('通过$refs访问parent子组件my_child3 :', this.$refs.my_child3.$el);
+              console.log('通过$refs访问parent子组件my_child4 :', this.$refs.my_child4.$el);
+            }
+          }
+        })
+      );
+
+      //3.1挂载Vue实例
+      let vm = new Vue({
+        el: '#app',
+        data: {
+          msg_src_pairs: {
+            我认为自己很丑0: './img/img_01.jpg',
+            我觉得自己很美0: './img/img_02.jpg',
+            我认为自己很丑1: './img/img_01.jpg',
+            我觉得自己很美1: './img/img_02.jpg'
+          }
+        },
+        methods: {
+          vmChildComponent() {
+            for (let index = 0; index < this.$children.length; index++) {
+              const element = this.$children[index];
+              console.log('通过$children打印所有vm子组件 :', element.$el);
+            }
+          },
+          vmViewChildByRef() {
+            for (let index = 0; index < this.$refs.parent.length; index++) {
+              const element = this.$refs.parent[index];
+              console.log('通过$refs访问vm子组件parent :', element.$el);
+            }
+          }
+        }
+      });
+    </script>
+  </body>
+</html>
